@@ -5,3 +5,4 @@
 .vercel
 output/
 khoi-steinmetz.html
+.env*
