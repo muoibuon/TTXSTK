@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Khối Steinmetz Monte Carlo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: một cột như tờ ghi chú thuyết trình trên nền mint; mỗi bước thí nghiệm là một khối đen chứa mô phỏng tương tác */
+:root {
+  --paper: #E8F5EE;
+  --ink: #0A0E0C;
+  --mint: #86E3BC;
+  --mint-ink: #136B46;
+  --muted: #53645B;
+  --rule: #C4DED0;
+  --panel: #0A0E0C;
+  --panel-2: #131A17;
+  --on-panel: #E4F1EA;
+  --on-panel-muted: #85978F;
+  --grid: #1E2924;
+  --pt-out: rgba(150, 172, 161, 0.30);
+  --pt-hollow: #F2F8F5;
+  --mint-wash: rgba(134, 227, 188, 0.16);
+  --f-display: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+img { max-width: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 56px 96px; display: grid; gap: 88px; }
+
+/* Header */
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(44px, 8vw, 88px); line-height: .98; letter-spacing: -.035em; margin: 14px 0 22px; text-wrap: balance; }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(26px, 3.6vw, 36px); line-height: 1.15; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.lead { font-size: 19px; max-width: 62ch; margin: 0; }
+.byline { margin-top: 22px; font-size: 14px; color: var(--muted); }
+.math { font-family: var(--f-mono); font-size: .92em; white-space: nowrap; }
+mark { background: linear-gradient(transparent 52%, var(--mint) 52%, var(--mint) 92%, transparent 92%); color: inherit; padding: 0 .12em; }
+
+/* Section */
+section { display: grid; gap: 22px; }
+.sec-head { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: baseline; }
+.step { font-family: var(--f-mono); font-size: 14px; color: var(--mint-ink); font-weight: 600; }
+.sec-head p { grid-column: 2; margin: 0; color: var(--muted); max-width: 64ch; }
+
+/* Black simulation panel */
+.panel { background: var(--panel); color: var(--on-panel); border-radius: 18px; padding: 20px; display: grid; gap: 18px; }
+.split { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; }
+.split > * { min-width: 0; }
+canvas { display: block; width: 100%; max-width: 100%; border-radius: 10px; touch-action: none; }
+#cv3d { aspect-ratio: 1 / 1; cursor: grab; }
+#cv3d:active { cursor: grabbing; }
+#cvConv { aspect-ratio: 16 / 6; }
+#cvSlice { aspect-ratio: 1 / 1; }
+#cvArea { aspect-ratio: 4 / 3; }
+#cvDots { aspect-ratio: 16 / 7; }
+#cvSD { aspect-ratio: 4 / 3; }
+.cap { font-size: 13px; color: var(--on-panel-muted); margin: 8px 2px 0; }
+
+.side { display: grid; gap: 18px; align-content: start; }
+.hero-num { display: grid; gap: 2px; }
+.hero-num .lbl { font-size: 13px; color: var(--on-panel-muted); }
+.hero-num .val { font-family: var(--f-mono); font-size: clamp(40px, 6vw, 56px); font-weight: 600; color: var(--mint); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.hero-num .sub { font-family: var(--f-mono); font-size: 13px; color: var(--on-panel-muted); }
+dl.stats { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; font-size: 14px; border-top: 1px solid var(--grid); padding-top: 14px; }
+dl.stats dt { color: var(--on-panel-muted); }
+dl.stats dd { margin: 0; text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font-family: var(--f-mono); font-size: 13px; background: transparent; color: var(--on-panel); border: 1px solid #2E3D36; border-radius: 999px; padding: 7px 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.btn:hover { border-color: var(--mint); }
+.btn.primary { background: var(--mint); color: var(--ink); border-color: var(--mint); font-weight: 600; }
+.btn.primary:hover { background: var(--on-panel); border-color: var(--on-panel); }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+.field { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--on-panel-muted); }
+.field input[type=number], .field select { font-family: var(--f-mono); font-size: 13px; background: var(--panel-2); color: var(--on-panel); border: 1px solid #2E3D36; border-radius: 8px; padding: 5px 8px; width: 84px; }
+.field input[type=checkbox] { accent-color: var(--mint); width: 16px; height: 16px; }
+input[type=range] { accent-color: var(--mint); width: 100%; }
+.slider-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; font-size: 14px; }
+.slider-row output { font-family: var(--f-mono); color: var(--mint); min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--on-panel-muted); margin: 8px 2px 0; }
+.legend i { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--mint); vertical-align: middle; margin-right: 6px; }
+.legend i.dash { border-top: 2px dashed var(--on-panel); }
+.legend i.band { height: 10px; border: 0; background: var(--mint-wash); outline: 1px solid rgba(134,227,188,.35); }
+.legend i.dot { width: 8px; height: 8px; border: 0; border-radius: 50%; background: var(--mint); }
+.legend i.ring { width: 8px; height: 8px; border: 1.5px solid var(--pt-hollow); border-radius: 50%; }
+
+.readout { display: grid; gap: 10px; font-size: 14px; }
+.readout .row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--grid); padding-bottom: 8px; }
+.readout .row span:last-child { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.readout .row.key span:last-child { color: var(--mint); font-weight: 600; }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th { font-weight: 500; color: var(--on-panel-muted); text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; font-size: 12px; }
+td { font-family: var(--f-mono); text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+.pbar { display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.pbar b { display: inline-block; height: 6px; background: var(--mint); border-radius: 3px; }
+.status { font-family: var(--f-mono); font-size: 12px; color: var(--on-panel-muted); }
+
+/* Talking points, on paper */
+.say { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 18px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.say h3 { margin: 0; font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mint-ink); padding-top: 4px; }
+.say ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; max-width: 70ch; }
+
+/* Reference table on paper */
+.ref { overflow-x: auto; }
+.ref table th { color: var(--muted); border-bottom-color: var(--rule); }
+.ref table td { border-bottom-color: var(--rule); }
+.note { font-size: 14px; color: var(--muted); max-width: 70ch; margin: 0; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 18px; }
+
+@media (max-width: 760px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .say { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .panel { padding: 14px; border-radius: 14px; }
+  #cvConv { aspect-ratio: 4 / 3; }
+  #cvDots { aspect-ratio: 4 / 3; }
+  .sec-head p { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+
+<main class="wrap">
+
+<header>
+  <div class="eyebrow">Chủ đề 10 · Tích phân Monte Carlo trong Hình học</div>
+  <h1>Khối Steinmetz</h1>
+  <p class="lead">Giao của hai hình trụ <span class="math">x² + y² ≤ 1</span> và <span class="math">x² + z² ≤ 1</span>. Thể tích đúng là <mark><span class="math">V = 16/3 ≈ 5.3333</span></mark>. Ta ước lượng nó chỉ bằng cách gieo điểm ngẫu nhiên đều <span class="math">U(−1, 1)</span> và đếm, rồi dùng Luật Yếu Số Lớn để giải thích vì sao cách này đúng.</p>
+  <div class="byline">Trần Ngô Tiến Đạt (Muối) · MSSV 25112231</div>
+</header>
+
+<!-- 01 -->
+<section id="gieo-diem">
+  <div class="sec-head">
+    <span class="step">01</span>
+    <h2>Gieo điểm vào hộp [−1, 1]³</h2>
+    <p>Mỗi điểm có x, y, z độc lập theo U(−1, 1). Điểm mint nằm trong cả hai hình trụ, điểm xám nằm ngoài. Kéo khối để xoay.</p>
+  </div>
+
+  <div class="panel">
+    <div class="split">
+      <div>
+        <canvas id="cv3d" aria-label="Đám mây điểm 3D trong hộp [-1,1]^3"></canvas>
+      </div>
+      <div class="side">
+        <div class="hero-num">
+          <span class="lbl">Thể tích ước lượng V̂ = 8 · p̂</span>
+          <span class="val" id="vhat">0.0000</span>
+          <span class="sub" id="vsub">đúng: 16/3 = 5.3333</span>
+        </div>
+        <dl class="stats">
+          <dt>Số điểm N</dt><dd id="sN">0</dd>
+          <dt>Điểm trong khối</dt><dd id="sIn">0</dd>
+          <dt>Tỷ lệ p̂</dt><dd id="sP">–</dd>
+          <dt>Sai số |V̂ − V|</dt><dd id="sErr">–</dd>
+          <dt>Sai số chuẩn</dt><dd id="sSE">–</dd>
+          <dt>Khoảng tin cậy 95%</dt><dd id="sCI">–</dd>
+        </dl>
+        <div class="controls">
+          <button class="btn primary" id="bRun" type="button">Chạy tới 100.000</button>
+          <button class="btn" id="b1" type="button">+1</button>
+          <button class="btn" id="b100" type="button">+100</button>
+          <button class="btn" id="b1k" type="button">+1.000</button>
+          <button class="btn" id="b10k" type="button">+10.000</button>
+        </div>
+        <div class="controls">
+          <label class="field" for="seed">Seed <input type="number" id="seed" value="2026"></label>
+          <button class="btn" id="bReset" type="button">Đặt lại</button>
+          <label class="field" for="hideOut"><input type="checkbox" id="hideOut"> Ẩn điểm ngoài</label>
+        </div>
+      </div>
+    </div>
+    <div>
+      <canvas id="cvConv" aria-label="Đồ thị hội tụ của ước lượng theo N"></canvas>
+      <div class="legend">
+        <span><i></i>Ước lượng V̂ khi N tăng</span>
+        <span><i class="dash"></i>Giá trị đúng 16/3</span>
+        <span><i class="band"></i>Vùng 95% lý thuyết: 16/3 ± 1,96 · 8√(p(1−p)/N)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="say">
+    <h3>Cần nói</h3>
+    <ul>
+      <li>Hộp bao <span class="math">[−1, 1]³</span> có thể tích 8. Khối nằm trọn trong hộp nên chỉ cần biết <mark>tỷ lệ điểm rơi vào khối</mark>.</li>
+      <li>Biến chỉ thị <span class="math">Iᵢ = 1</span> khi điểm thuộc khối, nên <mark><span class="math">Iᵢ ~ Bernoulli(p)</span> với <span class="math">p = V/8 = 2/3</span></mark>.</li>
+      <li>Ước lượng: <mark><span class="math">V̂ = 8 · (1/N) · Σ Iᵢ</span></mark>. Khoảng tin cậy 95%: <span class="math">V̂ ± 1,96 · 8 · √(p̂(1−p̂)/N)</span>.</li>
+      <li>Trên đồ thị: N nhỏ thì đường dao động mạnh, N lớn thì <mark>bám vào 16/3 và nằm trong phễu 95%</mark>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="lat-cat">
+  <div class="sec-head">
+    <span class="step">02</span>
+    <h2>Vì sao đáp số là 16/3</h2>
+    <p>Cắt khối bằng mặt phẳng x cố định. Hình trụ thứ nhất cho |y| ≤ √(1−x²), hình trụ thứ hai cho |z| ≤ √(1−x²), nên lát cắt là một hình vuông. Các điểm đã gieo ở bước 01 gần lát cắt được vẽ lên.</p>
+  </div>
+
+  <div class="panel">
+    <div class="slider-row">
+      <label for="sliceX">Vị trí lát cắt x</label>
+      <input type="range" id="sliceX" min="-1" max="1" step="0.01" value="0.40">
+      <output id="sliceOut" for="sliceX">0.40</output>
+    </div>
+    <div class="split">
+      <div>
+        <canvas id="cvSlice" aria-label="Lát cắt của khối tại x"></canvas>
+        <p class="cap">Mặt phẳng (y, z). Hai dải mờ là hai hình trụ, phần giao màu mint là lát cắt.</p>
+      </div>
+      <div class="side">
+        <canvas id="cvArea" aria-label="Diện tích lát cắt A(x) = 4(1 - x^2)"></canvas>
+        <div class="readout">
+          <div class="row"><span>Nửa cạnh h = √(1 − x²)</span><span id="rH">–</span></div>
+          <div class="row"><span>Diện tích lát A(x) = 4(1 − x²)</span><span id="rA">–</span></div>
+          <div class="row"><span>Thể tích tích lũy ∫ từ −1 tới x</span><span id="rCum">–</span></div>
+          <div class="row key"><span>Toàn bộ ∫₋₁¹ 4(1 − x²) dx</span><span>16/3 = 5.3333</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="say">
+    <h3>Cần nói</h3>
+    <ul>
+      <li>Lát cắt tại x là hình vuông cạnh <span class="math">2√(1−x²)</span>, diện tích <mark><span class="math">A(x) = 4(1 − x²)</span></mark>.</li>
+      <li>Cộng các lát: <mark><span class="math">V = ∫₋₁¹ 4(1 − x²) dx = 16/3</span></mark>.</li>
+      <li>Monte Carlo không cần công thức này. Ta chỉ dùng nó để <mark>kiểm tra ước lượng có đúng không</mark>.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="wlln">
+  <div class="sec-head">
+    <span class="step">03</span>
+    <h2>Luật Yếu Số Lớn: lặp lại thí nghiệm nhiều lần</h2>
+    <p>Với mỗi cỡ mẫu n, chạy lại toàn bộ thí nghiệm R lần. Mỗi chấm là một giá trị V̂. Chấm rỗng là những lần lệch khỏi 16/3 quá ε.</p>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+      <label class="field" for="wR">Số lần lặp R
+        <select id="wR"><option value="100">100</option><option value="200" selected>200</option><option value="500">500</option></select>
+      </label>
+      <button class="btn primary" id="wRun" type="button">Chạy lại với seed mới</button>
+      <span class="status" id="wStatus">seed 2026</span>
+    </div>
+    <div class="slider-row">
+      <label for="wEps">Ngưỡng ε</label>
+      <input type="range" id="wEps" min="0.02" max="0.40" step="0.01" value="0.10">
+      <output id="wEpsOut" for="wEps">0.10</output>
+    </div>
+    <div>
+      <canvas id="cvDots" aria-label="Phân tán các ước lượng V-hat theo cỡ mẫu n"></canvas>
+      <div class="legend">
+        <span><i class="dot"></i>|V̂ − V| ≤ ε</span>
+        <span><i class="ring"></i>|V̂ − V| &gt; ε</span>
+        <span><i class="band"></i>Dải 16/3 ± ε</span>
+      </div>
+    </div>
+    <div class="split">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>n</th><th>Trung bình</th><th>Độ lệch chuẩn</th><th>SD lý thuyết</th><th>P(|V̂ − V| &gt; ε)</th><th>Cận Chebyshev</th></tr></thead>
+          <tbody id="wBody"></tbody>
+        </table>
+        <p class="cap">SD lý thuyết = 8√(p(1−p)/n) với p = 2/3. Cận Chebyshev = Var(V̂)/ε², chặn trên của xác suất lệch.</p>
+      </div>
+      <div>
+        <canvas id="cvSD" aria-label="Độ lệch chuẩn theo n trên thang log-log"></canvas>
+        <div class="legend">
+          <span><i class="dot"></i>Độ lệch chuẩn thực nghiệm</span>
+          <span><i class="dash"></i>Lý thuyết ∝ 1/√n</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="say">
+    <h3>Cần nói</h3>
+    <ul>
+      <li>WLLN: trung bình mẫu hội tụ theo xác suất về p, nên <mark><span class="math">P(|V̂ − V| &gt; ε) → 0</span> khi n → ∞</mark>. Bảng cho thấy xác suất này giảm dần về 0.</li>
+      <li>Chứng minh nhanh bằng Chebyshev: <span class="math">P(|V̂ − V| &gt; ε) ≤ 64·p(1−p) / (n·ε²)</span>, vế phải tiến về 0.</li>
+      <li>Độ lệch chuẩn giảm theo <span class="math">1/√n</span>: <mark>muốn chính xác gấp 10 lần cần gấp 100 lần số điểm</mark>.</li>
+      <li>Tốc độ <span class="math">1/√n</span> <mark>không phụ thuộc số chiều</mark>, nên Monte Carlo mạnh với tích phân nhiều chiều, nơi chia lưới thông thường trở nên quá đắt.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- R -->
+<section id="ket-qua-r">
+  <div class="sec-head">
+    <span class="step">R</span>
+    <h2>Kết quả tham chiếu từ script R</h2>
+    <p>Số liệu mong đợi của <span class="math">monte_carlo_steinmetz.R</span> với <span class="math">set.seed(2026)</span>, N = 100.000, ε = 0.1, R = 200.</p>
+  </div>
+  <div class="ref">
+    <table>
+      <thead><tr><th>Đại lượng</th><th>Giá trị</th></tr></thead>
+      <tbody>
+        <tr><td>p̂</td><td>0.66682</td></tr>
+        <tr><td>V̂</td><td>5.33456</td></tr>
+        <tr><td>Sai số tuyệt đối</td><td>0.00123</td></tr>
+        <tr><td>Khoảng tin cậy 95%</td><td>[5.3112, 5.3579]</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ref">
+    <table>
+      <thead><tr><th>n</th><th>Trung bình</th><th>Độ lệch chuẩn</th><th>P(|V̂ − V| &gt; 0.1)</th></tr></thead>
+      <tbody>
+        <tr><td>100</td><td>5.3644</td><td>0.4064</td><td>0.840</td></tr>
+        <tr><td>1.000</td><td>5.3492</td><td>0.1157</td><td>0.420</td></tr>
+        <tr><td>10.000</td><td>5.3349</td><td>0.0390</td><td>0.015</td></tr>
+        <tr><td>100.000</td><td>5.3314</td><td>0.0135</td><td>0.000</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Trang này dùng bộ sinh số ngẫu nhiên khác với Mersenne-Twister của R, nên cùng seed 2026 vẫn cho các con số khác ở vài chữ số cuối. Quy luật thì giống nhau: V̂ quanh 5.33, độ lệch chuẩn giảm theo 1/√n, xác suất lệch giảm về 0.</p>
+</section>
+
+<footer>Khối Steinmetz · Tích phân Monte Carlo, phân bố đều U(a, b) và Luật Yếu Số Lớn · Trần Ngô Tiến Đạt (Muối), 25112231</footer>
+</main>
+
+<script>
+(() => {
+  const V_TRUE = 16 / 3, V_BOX = 8, P_TRUE = 2 / 3;
+  const SD_K = 8 * Math.sqrt(P_TRUE * (1 - P_TRUE));        // SD(V̂) = SD_K / √n
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = id => document.getElementById(id);
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const C = {
+    panel: css('--panel'), text: css('--on-panel'), muted: css('--on-panel-muted'), grid: css('--grid'),
+    mint: css('--mint'), wash: css('--mint-wash'), out: css('--pt-out'), hollow: css('--pt-hollow')
+  };
+  const MONO = '11px "JetBrains Mono", ui-monospace, Menlo, monospace';
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function fit(c) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = c.clientWidth, h = c.clientHeight;
+    const W = Math.max(1, Math.round(w * dpr)), H = Math.max(1, Math.round(h * dpr));
+    if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+    const ctx = c.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+    return { ctx, w, h };
+  }
+  const fmtInt = n => n.toLocaleString('vi-VN');
+  const fmtN = n => n >= 1e6 ? (n / 1e6) + ' tr' : fmtInt(n);
+
+  /* ---------- 01: gieo điểm ---------- */
+  const MAXD = 30000;                                    // số điểm tối đa được vẽ
+  const S = {
+    rng: null, N: 0, inside: 0, nd: 0,
+    xs: new Float32Array(MAXD), ys: new Float32Array(MAXD), zs: new Float32Array(MAXD), ins: new Uint8Array(MAXD),
+    hist: [], nextRec: 1, target: 0, running: false
+  };
+  function reset() {
+    const seed = parseInt($('seed').value, 10);
+    S.rng = mulberry32(Number.isFinite(seed) ? seed : 2026);
+    S.N = 0; S.inside = 0; S.nd = 0; S.hist = []; S.nextRec = 1; S.target = 0; S.running = false;
+    afterChange();
+  }
+  function add(k) {
+    const r = S.rng;
+    for (let i = 0; i < k; i++) {
+      const x = 2 * r() - 1, y = 2 * r() - 1, z = 2 * r() - 1;
+      const x2 = x * x;
+      const inn = (x2 + y * y <= 1) && (x2 + z * z <= 1);
+      S.N++; if (inn) S.inside++;
+      if (S.nd < MAXD) { S.xs[S.nd] = x; S.ys[S.nd] = y; S.zs[S.nd] = z; S.ins[S.nd] = inn ? 1 : 0; S.nd++; }
+      if (S.N >= S.nextRec) {
+        S.hist.push(S.N, V_BOX * S.inside / S.N);
+        S.nextRec = Math.max(S.N + 1, Math.ceil(S.N * 1.01));
+      }
+    }
+  }
+  function addNow(k) {
+    add(k);
+    S.hist.push(S.N, V_BOX * S.inside / S.N);
+    afterChange();
+  }
+  function updateStats() {
+    const N = S.N;
+    $('sN').textContent = fmtInt(N);
+    $('sIn').textContent = fmtInt(S.inside);
+    $('bRun').textContent = S.running ? 'Tạm dừng' : (N >= 100000 ? 'Chạy thêm 100.000' : 'Chạy tới 100.000');
+    if (!N) {
+      $('vhat').textContent = '0.0000';
+      ['sP', 'sErr', 'sSE', 'sCI'].forEach(id => $(id).textContent = '–');
+      return;
+    }
+    const p = S.inside / N, v = V_BOX * p, se = V_BOX * Math.sqrt(p * (1 - p) / N);
+    $('vhat').textContent = v.toFixed(4);
+    $('sP').textContent = p.toFixed(5);
+    $('sErr').textContent = Math.abs(v - V_TRUE).toFixed(5);
+    $('sSE').textContent = se.toFixed(5);
+    $('sCI').textContent = '[' + (v - 1.96 * se).toFixed(4) + ', ' + (v + 1.96 * se).toFixed(4) + ']';
+  }
+  function afterChange() { updateStats(); drawConv(); drawSlice(); dirty3d = true; }
+
+  // 3D view
+  const cv3 = $('cv3d');
+  let yaw = 0.75, pitch = 0.42, dragging = null, dirty3d = true, vis3d = true;
+  function draw3D() {
+    const { ctx, w, h } = fit(cv3);
+    const sc = Math.min(w, h) * 0.235, cx = w / 2, cy = h / 2 + h * 0.02;
+    const a = Math.cos(yaw), b = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const P = (x, y, z) => {
+      const x1 = x * a - y * b, y1 = x * b + y * a;
+      const d = y1 * cp - z * sp, z2 = y1 * sp + z * cp;
+      const f = 1 / (1 + 0.14 * d);
+      return [cx + x1 * sc * f, cy - z2 * sc * f, d];
+    };
+    // khung hộp
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+    const V = [-1, 1];
+    ctx.beginPath();
+    for (const u of V) for (const v of V) {
+      let p = P(-1, u, v), q = P(1, u, v); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]);
+      p = P(u, -1, v); q = P(u, 1, v); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]);
+      p = P(u, v, -1); q = P(u, v, 1); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]);
+    }
+    ctx.stroke();
+    const n = S.nd, xs = S.xs, ys = S.ys, zs = S.zs, ins = S.ins;
+    const sz = w < 420 ? 1.3 : 1.6, hs = sz / 2;
+    if (!$('hideOut').checked) {
+      ctx.fillStyle = C.out;
+      for (let i = 0; i < n; i++) if (!ins[i]) { const p = P(xs[i], ys[i], zs[i]); ctx.fillRect(p[0] - hs, p[1] - hs, sz, sz); }
+    }
+    ctx.fillStyle = C.mint;
+    for (const far of [true, false]) {
+      ctx.globalAlpha = far ? 0.45 : 1;
+      for (let i = 0; i < n; i++) if (ins[i]) {
+        const p = P(xs[i], ys[i], zs[i]);
+        if ((p[2] > 0) === far) ctx.fillRect(p[0] - hs, p[1] - hs, sz, sz);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = C.muted; ctx.font = MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const [lbl, x, y, z] of [['x', 1.3, 0, 0], ['y', 0, 1.3, 0], ['z', 0, 0, 1.3]]) {
+      const p = P(x, y, z); ctx.fillText(lbl, p[0], p[1]);
+    }
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(S.nd < S.N ? 'vẽ ' + fmtInt(S.nd) + ' / ' + fmtInt(S.N) + ' điểm' : fmtInt(S.N) + ' điểm', 12, 12);
+  }
+  cv3.addEventListener('pointerdown', e => { dragging = { x: e.clientX, y: e.clientY, yaw, pitch }; cv3.setPointerCapture(e.pointerId); });
+  cv3.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    yaw = dragging.yaw + (e.clientX - dragging.x) * 0.01;
+    pitch = Math.max(-1.4, Math.min(1.4, dragging.pitch + (e.clientY - dragging.y) * 0.01));
+    dirty3d = true;
+  });
+  const endDrag = () => { dragging = null; };
+  cv3.addEventListener('pointerup', endDrag); cv3.addEventListener('pointercancel', endDrag);
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => { vis3d = es[0].isIntersecting; }).observe(cv3);
+
+  // Đồ thị hội tụ
+  function drawConv() {
+    const c = $('cvConv'); const { ctx, w, h } = fit(c);
+    const m = { l: 46, r: 16, t: 14, b: 30 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+    const xmax = Math.max(1e5, S.N), lx = Math.log10(xmax);
+    const X = n => m.l + Math.log10(n) / lx * pw;
+    const y0 = 4.3, y1 = 6.4, Y = v => m.t + (y1 - v) / (y1 - y0) * ph;
+    ctx.font = MONO; ctx.lineWidth = 1;
+    ctx.strokeStyle = C.grid; ctx.fillStyle = C.muted;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const v of [4.5, 5, 5.5, 6]) { ctx.beginPath(); ctx.moveTo(m.l, Y(v)); ctx.lineTo(w - m.r, Y(v)); ctx.stroke(); ctx.fillText(v.toFixed(1), m.l - 8, Y(v)); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let k = 0; k <= Math.floor(lx); k++) {
+      const n = Math.pow(10, k), x = X(n);
+      ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
+      if (w > 480 || k % 2 === 1 || k === Math.floor(lx)) ctx.fillText(fmtN(n), x, m.t + ph + 8);
+    }
+    ctx.save(); ctx.beginPath(); ctx.rect(m.l, m.t, pw, ph); ctx.clip();
+    // phễu 95% lý thuyết
+    ctx.beginPath();
+    const K = 160;
+    for (let k = 0; k <= K; k++) { const n = Math.pow(10, lx * k / K); const y = Y(V_TRUE + 1.96 * SD_K / Math.sqrt(n)); k ? ctx.lineTo(X(n), y) : ctx.moveTo(X(n), y); }
+    for (let k = K; k >= 0; k--) { const n = Math.pow(10, lx * k / K); ctx.lineTo(X(n), Y(V_TRUE - 1.96 * SD_K / Math.sqrt(n))); }
+    ctx.closePath(); ctx.fillStyle = C.wash; ctx.fill();
+    // giá trị đúng
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = C.text; ctx.beginPath(); ctx.moveTo(m.l, Y(V_TRUE)); ctx.lineTo(w - m.r, Y(V_TRUE)); ctx.stroke(); ctx.setLineDash([]);
+    // ước lượng
+    const H = S.hist;
+    if (H.length >= 2) {
+      ctx.strokeStyle = C.mint; ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.beginPath();
+      for (let i = 0; i < H.length; i += 2) { const x = X(H[i]), y = Y(H[i + 1]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.stroke();
+      const lx_ = X(H[H.length - 2]), ly = Y(H[H.length - 1]);
+      ctx.fillStyle = C.mint; ctx.beginPath(); ctx.arc(lx_, ly, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = C.text; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('16/3', w - m.r - 4, Y(V_TRUE) - 4);
+    ctx.fillStyle = C.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('N (thang log)', m.l + 6, m.t + 4);
+  }
+
+  /* ---------- 02: lát cắt ---------- */
+  function drawSlice() {
+    const x0 = +$('sliceX').value, hh = Math.sqrt(Math.max(0, 1 - x0 * x0));
+    const c = $('cvSlice'); const { ctx, w, h } = fit(c);
+    const s = Math.min(w, h) * 0.4, cx = w / 2, cy = h / 2;
+    const px = u => cx + u * s, py = v => cy - v * s;
+    ctx.fillStyle = 'rgba(228,241,234,0.05)';
+    ctx.fillRect(px(-hh), py(1), 2 * hh * s, 2 * s);       // hình trụ 1: |y| ≤ h
+    ctx.fillRect(px(-1), py(hh), 2 * s, 2 * hh * s);       // hình trụ 2: |z| ≤ h
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.strokeRect(px(-1), py(1), 2 * s, 2 * s);
+    ctx.fillStyle = C.wash; ctx.fillRect(px(-hh), py(hh), 2 * hh * s, 2 * hh * s);
+    ctx.strokeStyle = C.mint; ctx.lineWidth = 1.5; ctx.strokeRect(px(-hh), py(hh), 2 * hh * s, 2 * hh * s);
+    const tol = 0.03;
+    for (let i = 0; i < S.nd; i++) {
+      if (Math.abs(S.xs[i] - x0) > tol) continue;
+      ctx.fillStyle = S.ins[i] ? C.mint : C.out;
+      ctx.fillRect(px(S.ys[i]) - 1.2, py(S.zs[i]) - 1.2, 2.4, 2.4);
+    }
+    ctx.fillStyle = C.muted; ctx.font = MONO; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('y', px(0), py(-1) + 8); ctx.fillText('−1', px(-1), py(-1) + 8); ctx.fillText('1', px(1), py(-1) + 8);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('z', px(-1) - 10, py(0));
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('x = ' + x0.toFixed(2) + (S.nd ? '  ·  điểm có |x − ' + x0.toFixed(2) + '| < 0.03' : '  ·  gieo điểm ở bước 01'), 12, 12);
+  }
+  function drawArea() {
+    const x0 = +$('sliceX').value;
+    const c = $('cvArea'); const { ctx, w, h } = fit(c);
+    const m = { l: 34, r: 14, t: 16, b: 28 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+    const X = x => m.l + (x + 1) / 2 * pw, Y = a => m.t + (4.4 - a) / 4.4 * ph;
+    const A = x => 4 * (1 - x * x);
+    ctx.font = MONO; ctx.strokeStyle = C.grid; ctx.fillStyle = C.muted; ctx.lineWidth = 1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const a of [0, 2, 4]) { ctx.beginPath(); ctx.moveTo(m.l, Y(a)); ctx.lineTo(w - m.r, Y(a)); ctx.stroke(); ctx.fillText(a, m.l - 8, Y(a)); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (const x of [-1, 0, 1]) ctx.fillText(x, X(x), m.t + ph + 8);
+    // phần diện tích tích lũy
+    ctx.beginPath(); ctx.moveTo(X(-1), Y(0));
+    for (let k = 0; k <= 80; k++) { const x = -1 + (x0 + 1) * k / 80; ctx.lineTo(X(x), Y(A(x))); }
+    ctx.lineTo(X(x0), Y(0)); ctx.closePath(); ctx.fillStyle = C.wash; ctx.fill();
+    ctx.beginPath();
+    for (let k = 0; k <= 120; k++) { const x = -1 + 2 * k / 120; k ? ctx.lineTo(X(x), Y(A(x))) : ctx.moveTo(X(x), Y(A(x))); }
+    ctx.strokeStyle = C.mint; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = C.text; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(x0), Y(0)); ctx.lineTo(X(x0), Y(A(x0))); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C.mint; ctx.beginPath(); ctx.arc(X(x0), Y(A(x0)), 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('A(x) = 4(1 − x²)', m.l + 6, m.t);
+    const hh = Math.sqrt(Math.max(0, 1 - x0 * x0));
+    $('rH').textContent = hh.toFixed(4);
+    $('rA').textContent = A(x0).toFixed(4);
+    $('rCum').textContent = (4 * x0 - 4 * x0 ** 3 / 3 + 8 / 3).toFixed(4);
+  }
+  $('sliceX').addEventListener('input', () => { $('sliceOut').textContent = (+$('sliceX').value).toFixed(2); drawSlice(); drawArea(); });
+
+  /* ---------- 03: WLLN ---------- */
+  const NV = [100, 1000, 10000, 100000];
+  const W = { seed: 2026, est: [[], [], [], []], token: 0, busy: false };
+  const eps = () => +$('wEps').value;
+  const hash = k => { const s = Math.sin(k * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+  async function runW() {
+    const tok = ++W.token, R = +$('wR').value;
+    W.est = [[], [], [], []]; W.busy = true;
+    const rng = mulberry32(W.seed * 7919 + 1);
+    let budget = 0;
+    for (let j = 0; j < NV.length; j++) {
+      const n = NV[j];
+      for (let r = 0; r < R; r++) {
+        let c = 0;
+        for (let i = 0; i < n; i++) {
+          const x = 2 * rng() - 1, y = 2 * rng() - 1, z = 2 * rng() - 1, x2 = x * x;
+          if (x2 + y * y <= 1 && x2 + z * z <= 1) c++;
+        }
+        W.est[j].push(V_BOX * c / n);
+        budget += n;
+        if (budget > 1.5e6) {
+          budget = 0;
+          $('wStatus').textContent = 'đang chạy n = ' + fmtInt(n) + ' · ' + (r + 1) + '/' + R;
+          drawW();
+          await new Promise(res => setTimeout(res, 0));
+          if (tok !== W.token) return;
+        }
+      }
+    }
+    W.busy = false;
+    $('wStatus').textContent = 'seed ' + W.seed + ' · R = ' + R + ' · ' + fmtInt(R * NV.reduce((a, b) => a + b, 0)) + ' điểm';
+    drawW();
+  }
+  function colStats(arr, n) {
+    const k = arr.length; if (!k) return null;
+    const mean = arr.reduce((a, b) => a + b, 0) / k;
+    const sd = k > 1 ? Math.sqrt(arr.reduce((a, b) => a + (b - mean) ** 2, 0) / (k - 1)) : NaN;
+    const e = eps();
+    const P = arr.filter(v => Math.abs(v - V_TRUE) > e).length / k;
+    const cheb = Math.min(1, SD_K * SD_K / (n * e * e));
+    return { mean, sd, P, cheb, theo: SD_K / Math.sqrt(n) };
+  }
+  function drawW() {
+    const st = NV.map((n, j) => colStats(W.est[j], n));
+    drawDots(st); drawTable(st); drawSD(st);
+  }
+  function drawDots(st) {
+    const c = $('cvDots'); const { ctx, w, h } = fit(c);
+    const m = { l: 46, r: 12, t: 34, b: 30 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+    const y0 = V_TRUE - 1.45, y1 = V_TRUE + 1.45, Y = v => m.t + (y1 - Math.max(y0, Math.min(y1, v))) / (y1 - y0) * ph;
+    const e = eps(), cw = pw / NV.length;
+    ctx.fillStyle = C.wash; ctx.fillRect(m.l, Y(V_TRUE + e), pw, Y(V_TRUE - e) - Y(V_TRUE + e));
+    ctx.font = MONO; ctx.strokeStyle = C.grid; ctx.fillStyle = C.muted; ctx.lineWidth = 1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const v of [4, 4.5, 5, 5.5, 6, 6.5]) { ctx.beginPath(); ctx.moveTo(m.l, Y(v)); ctx.lineTo(w - m.r, Y(v)); ctx.stroke(); ctx.fillText(v.toFixed(1), m.l - 8, Y(v)); }
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = C.text; ctx.beginPath(); ctx.moveTo(m.l, Y(V_TRUE)); ctx.lineTo(w - m.r, Y(V_TRUE)); ctx.stroke(); ctx.setLineDash([]);
+    for (let j = 0; j < NV.length; j++) {
+      const cx = m.l + cw * (j + 0.5), arr = W.est[j];
+      for (let k = 0; k < arr.length; k++) {
+        const x = cx + (hash(k + j * 1000) - 0.5) * cw * 0.6, y = Y(arr[k]);
+        if (Math.abs(arr[k] - V_TRUE) > e) {
+          ctx.strokeStyle = C.hollow; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 2.4, 0, Math.PI * 2); ctx.stroke();
+        } else {
+          ctx.fillStyle = C.mint; ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText('n = ' + fmtInt(NV[j]), cx, m.t + ph + 10);
+      if (st[j]) {
+        ctx.fillStyle = C.mint; ctx.textBaseline = 'bottom';
+        ctx.fillText('P = ' + st[j].P.toFixed(3), cx, m.t - 10);
+      }
+    }
+  }
+  function drawTable(st) {
+    $('wBody').innerHTML = NV.map((n, j) => {
+      const s = st[j];
+      if (!s) return '<tr><td>' + fmtInt(n) + '</td><td>…</td><td>…</td><td>' + (SD_K / Math.sqrt(n)).toFixed(4) + '</td><td>…</td><td>…</td></tr>';
+      return '<tr><td>' + fmtInt(n) + '</td><td>' + s.mean.toFixed(4) + '</td><td>' + (isNaN(s.sd) ? '–' : s.sd.toFixed(4)) +
+        '</td><td>' + s.theo.toFixed(4) + '</td><td><span class="pbar"><b style="width:' + Math.round(s.P * 60) + 'px"></b>' + s.P.toFixed(3) +
+        '</span></td><td>' + s.cheb.toFixed(3) + '</td></tr>';
+    }).join('');
+  }
+  function drawSD(st) {
+    const c = $('cvSD'); const { ctx, w, h } = fit(c);
+    const m = { l: 50, r: 14, t: 16, b: 30 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
+    const lx0 = 1.7, lx1 = 5.3, ly0 = -2.5, ly1 = 0;
+    const X = n => m.l + (Math.log10(n) - lx0) / (lx1 - lx0) * pw;
+    const Y = s => m.t + (ly1 - Math.log10(s)) / (ly1 - ly0) * ph;
+    ctx.font = MONO; ctx.strokeStyle = C.grid; ctx.fillStyle = C.muted; ctx.lineWidth = 1;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (const s of [0.01, 0.1, 1]) { ctx.beginPath(); ctx.moveTo(m.l, Y(s)); ctx.lineTo(w - m.r, Y(s)); ctx.stroke(); ctx.fillText(s, m.l - 8, Y(s)); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (const n of NV) { ctx.beginPath(); ctx.moveTo(X(n), m.t); ctx.lineTo(X(n), m.t + ph); ctx.stroke(); ctx.fillText(fmtN(n), X(n), m.t + ph + 8); }
+    ctx.save(); ctx.beginPath(); ctx.rect(m.l, m.t, pw, ph); ctx.clip();
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = C.text; ctx.beginPath();
+    ctx.moveTo(X(50), Y(SD_K / Math.sqrt(50))); ctx.lineTo(X(2e5), Y(SD_K / Math.sqrt(2e5))); ctx.stroke(); ctx.setLineDash([]);
+    const pts = st.map((s, j) => s && !isNaN(s.sd) ? [X(NV[j]), Y(s.sd)] : null).filter(Boolean);
+    ctx.strokeStyle = C.mint; ctx.lineWidth = 1.5; ctx.beginPath();
+    pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+    ctx.fillStyle = C.mint; pts.forEach(p => { ctx.beginPath(); ctx.arc(p[0], p[1], 4, 0, Math.PI * 2); ctx.fill(); });
+    ctx.restore();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('độ dốc −1/2 trên thang log-log', m.l + 6, m.t + 4);
+  }
+  $('wEps').addEventListener('input', () => { $('wEpsOut').textContent = eps().toFixed(2); drawW(); });
+  $('wR').addEventListener('change', runW);
+  $('wRun').addEventListener('click', () => { W.seed++; runW(); });
+
+  /* ---------- điều khiển & vòng lặp ---------- */
+  $('bRun').addEventListener('click', () => {
+    if (S.running) { S.running = false; updateStats(); return; }
+    S.target = S.N + (S.N >= 100000 ? 100000 : 100000 - S.N);
+    if (reduce) { addNow(S.target - S.N); return; }
+    S.running = true; updateStats();
+  });
+  $('b1').addEventListener('click', () => addNow(1));
+  $('b100').addEventListener('click', () => addNow(100));
+  $('b1k').addEventListener('click', () => addNow(1000));
+  $('b10k').addEventListener('click', () => addNow(10000));
+  $('bReset').addEventListener('click', reset);
+  $('seed').addEventListener('change', reset);
+  $('hideOut').addEventListener('change', () => { dirty3d = true; });
+
+  function tick() {
+    if (S.running) {
+      const step = Math.max(4, Math.ceil(S.N * 0.035));
+      add(Math.min(step, S.target - S.N));
+      if (S.N >= S.target) { S.running = false; S.hist.push(S.N, V_BOX * S.inside / S.N); }
+      afterChange();
+    }
+    if (!dragging && !reduce && vis3d) { yaw += 0.0025; dirty3d = true; }
+    if (dirty3d && vis3d) { draw3D(); dirty3d = false; }
+    requestAnimationFrame(tick);
+  }
+
+  function redrawAll() { dirty3d = true; drawConv(); drawSlice(); drawArea(); drawW(); }
+  if ('ResizeObserver' in window) {
+    let raf = 0;
+    new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(redrawAll); }).observe(document.querySelector('.wrap'));
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(redrawAll);
+
+  // Trạng thái ban đầu: đã có sẵn 2.000 điểm, rồi tự chạy tới 100.000
+  reset();
+  addNow(2000);
+  drawArea();
+  S.target = 100000;
+  if (reduce) addNow(S.target - S.N); else S.running = true;
+  updateStats();
+  runW();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
