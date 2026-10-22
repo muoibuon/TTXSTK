@@ -107,6 +107,12 @@ th:first-child, td:first-child { text-align: left; }
 .pbar b { display: inline-block; height: 6px; background: var(--mint); border-radius: 3px; }
 .status { font-family: var(--f-mono); font-size: 12px; color: var(--on-panel-muted); }
 
+/* Trích đoạn code R hiển thị kèm mỗi mô phỏng */
+.code-wrap { display: grid; gap: 8px; }
+.code-cap { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--mint); }
+pre.code { margin: 0; font-family: var(--f-mono); font-size: 14px; line-height: 1.7; color: var(--on-panel); background: var(--panel-2); border: 1px solid var(--grid); border-left: 3px solid var(--mint); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+pre.code .cmt { color: var(--on-panel-muted); }
+
 /* Talking points, on paper */
 .say { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 18px; padding-top: 18px; border-top: 1px solid var(--rule); }
 .say h3 { margin: 0; font-family: var(--f-mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mint-ink); padding-top: 4px; }
@@ -126,6 +132,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
   #cvConv { aspect-ratio: 4 / 3; }
   #cvDots { aspect-ratio: 4 / 3; }
   .sec-head p { grid-column: 1 / -1; }
+  pre.code { font-size: 12px; padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 </style>
@@ -190,6 +197,12 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
         <span><i class="band"></i>Vùng 95% lý thuyết: 16/3 ± 1,96 · 8√(p(1−p)/N)</span>
       </div>
     </div>
+    <figure class="code-wrap">
+      <figcaption class="code-cap">Trích R · gieo điểm và ước lượng V̂</figcaption>
+<pre class="code">x &lt;- runif(N, -1, 1); y &lt;- runif(N, -1, 1); z &lt;- runif(N, -1, 1)
+inside &lt;- (x^2 + y^2 &lt;= 1) &amp; (x^2 + z^2 &lt;= 1)   <span class="cmt"># trong cả 2 trụ</span>
+V_hat  &lt;- 8 * mean(inside)                      <span class="cmt"># 8 = thể tích hộp bao</span></pre>
+    </figure>
   </div>
 
   <div class="say">
@@ -232,6 +245,11 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
         </div>
       </div>
     </div>
+    <figure class="code-wrap">
+      <figcaption class="code-cap">Kiểm tra bằng giải tích trong R</figcaption>
+<pre class="code">A &lt;- function(x) 4 * (1 - x^2)   <span class="cmt"># diện tích lát cắt A(x)</span>
+integrate(A, -1, 1)$value        <span class="cmt"># = 5.333333 = 16/3</span></pre>
+    </figure>
   </div>
 
   <div class="say">
@@ -289,6 +307,15 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
         </div>
       </div>
     </div>
+    <figure class="code-wrap">
+      <figcaption class="code-cap">Trích R · lặp lại thí nghiệm (WLLN)</figcaption>
+<pre class="code">mc_volume &lt;- function(n) {
+  x &lt;- runif(n,-1,1); y &lt;- runif(n,-1,1); z &lt;- runif(n,-1,1)
+  8 * mean((x^2 + y^2 &lt;= 1) &amp; (x^2 + z^2 &lt;= 1))
+}
+est &lt;- replicate(R, mc_volume(n))   <span class="cmt"># lặp R lần ở cỡ mẫu n</span>
+mean(abs(est - 16/3) &gt; eps)         <span class="cmt"># P(|V̂ − V| &gt; ε) → 0</span></pre>
+    </figure>
   </div>
 
   <div class="say">
