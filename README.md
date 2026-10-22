@@ -7,4 +7,13 @@ Chủ đề 10: Tích phân Monte Carlo trong Hình học — ước lượng th
 - `monte_carlo_steinmetz.R`: script R gốc (base R, R ≥ 4.0)
 - `MonteCarlo_Steinmetz.Rproj`: RStudio project
 
-Tác giả: Trần Ngô Tiến Đạt (Muối) — MSSV 25112231
+Nhóm GK-XSTK_bcse:
+
+| Họ tên | MSSV |
+| --- | --- |
+| Nguyễn Khắc Trung Dũng | 25112030 |
+| Nguyễn Tiến Dũng | 25112032 |
+| Nguyễn Duy Hoàng | 25112049 |
+| Bùi Nhật Minh | 25112075 |
+| Phạm Tiến Sang | 25112105 |
+| Trần Ngô Tiến Đạt (Muối) | 25112231 |
