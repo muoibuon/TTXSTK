@@ -139,6 +139,27 @@ pre.code .cmt { color: var(--on-panel-muted); }
 .gloss td:first-child, .gloss td:last-child { font-family: var(--f-body); }
 .gloss td:first-child { font-weight: 500; }
 .gloss td:nth-child(2) { white-space: nowrap; }
+/* Khung lý thuyết: nền mint đậm hơn, viền trái đậm để nổi bật */
+.theory { background: rgba(134, 227, 188, 0.32); border: 1px solid var(--mint); border-left: 6px solid var(--mint-ink); border-radius: 14px; padding: 20px 24px; display: grid; gap: 12px; }
+.theory-tag { justify-self: start; font-family: var(--f-mono); font-size: 14px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--paper); background: var(--mint-ink); border-radius: 999px; padding: 4px 12px; }
+.theory h3 { margin: 0; font-size: 1.15em; font-weight: 700; }
+.theory p, .theory ul { margin: 0; max-width: 72ch; }
+.theory ul { padding-left: 22px; display: grid; gap: 8px; }
+.theory math { font-size: 1.12em; }
+.theory math[display="block"] { margin: 6px 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.eq { display: flex; flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; align-items: center; justify-content: center; gap: 0 .35em; font-size: 1.15em; padding: 6px 0; }
+.eq i { font-family: "Times New Roman", Georgia, serif; font-size: 1.1em; }
+.frac { display: inline-flex; flex-direction: column; align-items: stretch; text-align: center; line-height: 1.25; vertical-align: middle; }
+.frac > span { padding: 0 .2em; }
+.frac > span + span { border-top: 1.5px solid currentColor; padding-top: 2px; }
+.big { font-size: 2.4em; line-height: 1; font-weight: 300; }
+.brace { font-size: 3.6em; line-height: 1; font-weight: 200; margin-right: .1em; }
+.cases { display: grid; grid-template-columns: auto auto; gap: 6px 1.4em; align-items: center; }
+.lim { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; }
+.lim small { font-size: .7em; }
+.arrowP { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+.arrowP small { font-size: .7em; }
+.theory .apply { border-top: 1px dashed var(--mint-ink); padding-top: 12px; }
 footer { font-size: 15.5px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 18px; }
 
 @media (max-width: 760px) {
@@ -150,6 +171,10 @@ footer { font-size: 15.5px; color: var(--muted); border-top: 1px solid var(--rul
   .sec-head p { grid-column: 1 / -1; }
   pre.code { font-size: 14.5px; padding: 12px; white-space: pre-wrap; }
   .say .math { white-space: normal; }
+  .eq { font-size: .88em; gap: 0 .22em; justify-content: flex-start; }
+  .eq .big { font-size: 1.9em; }
+  .eq .brace { font-size: 3em; }
+  .theory { padding: 16px 16px 16px 18px; }
   .gloss thead { display: none; }
   .gloss tr { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
   .gloss td { border: 0; padding: 0; }
@@ -192,6 +217,18 @@ footer { font-size: 15.5px; color: var(--muted); border-top: 1px solid var(--rul
     <span class="step">01</span>
     <h2>Gieo điểm vào hộp [−1, 1]³</h2>
     <p>Mỗi điểm có x, y, z độc lập theo U(−1, 1). Điểm mint nằm trong cả hai hình trụ, điểm xám nằm ngoài. Kéo khối để xoay.</p>
+  </div>
+
+  <div class="theory">
+    <span class="theory-tag">Lý thuyết</span>
+    <h3>Phân bố đều U(a, b)</h3>
+    <ul>
+      <li>Cho biến ngẫu nhiên X có phân bố đều trên đoạn [a, b], ký hiệu <span class="math">X ~ U(a, b)</span>.</li>
+      <li>Hàm mật độ xác suất của X là:</li>
+    </ul>
+    <div class="eq" role="math" aria-label="f(x) bằng 1 chia (b trừ a) khi a nhỏ hơn hoặc bằng x nhỏ hơn hoặc bằng b, bằng 0 nếu ngược lại"><span><i>f</i>(<i>x</i>) =</span><span class="brace">{</span><span class="cases"><span class="frac"><span>1</span><span><i>b</i> − <i>a</i></span></span><span>khi <i>a</i> ≤ <i>x</i> ≤ <i>b</i></span><span>0</span><span>ngược lại</span></span></div>
+    <p><strong>Nền tảng:</strong> sử dụng phân bố đều U(a, b) giúp đảm bảo <mark>mọi điểm trong miền chọn đều có xác suất xuất hiện như nhau</mark>, không bị lệch hay ưu tiên vùng nào.</p>
+    <p class="apply"><strong>Áp dụng vào bài:</strong> a = −1, b = 1 nên f(x) = 1/(1 − (−1)) = 1/2 trên [−1, 1]. Ba tọa độ x, y, z độc lập, nên điểm (x, y, z) rơi đều trong hộp với mật độ 1/2 × 1/2 × 1/2 = 1/8. Vì vậy xác suất điểm rơi vào khối = V × 1/8 = <strong>V / 8</strong>, chính là công thức p = V / 8 ở trên.</p>
   </div>
 
   <div class="panel">
@@ -363,6 +400,20 @@ integrate(A, -1, 1)$value        <span class="cmt"># = 5.333333 = 16/3</span></p
     <span class="step">03</span>
     <h2>Luật Yếu Số Lớn: lặp lại thí nghiệm nhiều lần</h2>
     <p>Với mỗi cỡ mẫu n, chạy lại toàn bộ thí nghiệm R lần. Mỗi chấm là một giá trị V̂. Chấm rỗng là những lần lệch khỏi 16/3 quá ε.</p>
+  </div>
+
+  <div class="theory">
+    <span class="theory-tag">Lý thuyết</span>
+    <h3>Luật Yếu Số Lớn</h3>
+    <ul>
+      <li>Cho dãy biến ngẫu nhiên <math><msub><mrow><mo>(</mo><msub><mi>X</mi><mi>n</mi></msub><mo>)</mo></mrow><mrow><mi>n</mi><mo>≥</mo><mn>1</mn></mrow></msub></math> có <math><mi>𝔼</mi><msub><mi>X</mi><mi>i</mi></msub><mo>&lt;</mo><mi>∞</mi><mo>,</mo><mo>∀</mo><mi>i</mi><mo>=</mo><mn>1</mn><mo>,</mo><mo>…</mo><mo>,</mo><mi>n</mi></math>. Đặt <math><msub><mi>S</mi><mi>n</mi></msub><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>X</mi><mi>i</mi></msub></math>.</li>
+      <li><strong>Luật yếu số lớn:</strong> dãy <math><mo>{</mo><msub><mi>X</mi><mi>n</mi></msub><mo>}</mo></math> được gọi là tuân theo Luật yếu số lớn nếu với mọi ε &gt; 0:</li>
+    </ul>
+    <div class="eq" role="math" aria-label="giới hạn khi n tiến ra vô cùng của xác suất trị tuyệt đối của (S n trừ kỳ vọng S n) chia n lớn hơn hoặc bằng epsilon bằng 0"><span class="lim"><span>lim</span><small><i>n</i> → ∞</small></span><span><i>P</i></span><span class="big">(</span><span class="big">|</span><span class="frac"><span><i>S</i><sub>n</sub> − 𝔼(<i>S</i><sub>n</sub>)</span><span><i>n</i></span></span><span class="big">|</span><span>≥ <i>ε</i></span><span class="big">)</span><span>= 0</span></div>
+    <p>Ký hiệu ngắn gọn:</p>
+    <div class="eq" role="math" aria-label="(S n trừ kỳ vọng S n) chia n hội tụ theo xác suất về 0"><span class="frac"><span><i>S</i><sub>n</sub> − 𝔼(<i>S</i><sub>n</sub>)</span><span><i>n</i></span></span><span class="arrowP"><small><i>P</i></small><span>⟶</span></span><span>0</span></div>
+    <p><strong>Ý nghĩa:</strong> khi số lần thử nghiệm n tiến ra vô cùng (n → ∞), <mark>xác suất xảy ra sai lệch lớn giữa trung bình thực nghiệm S<sub>n</sub>/n và kỳ vọng của nó sẽ bị ép về 0</mark>.</p>
+    <p class="apply"><strong>Áp dụng vào bài:</strong> lấy X<sub>i</sub> = I<sub>i</sub> (1 nếu điểm thứ i rơi vào khối, 0 nếu không), nên 𝔼X<sub>i</sub> = p = 2/3. Khi đó S<sub>n</sub> = M là số điểm trúng, 𝔼(S<sub>n</sub>) = n·p, và (S<sub>n</sub> − 𝔼(S<sub>n</sub>))/n = p̂ − p. Luật nói p̂ − p dần về 0, nhân với 8 được <strong>V̂ − V dần về 0</strong>: ném càng nhiều điểm thì thể tích đoán càng sát 16/3. Bất đẳng thức Chebyshev bên dưới là cách chứng minh điều này.</p>
   </div>
 
   <div class="panel">
