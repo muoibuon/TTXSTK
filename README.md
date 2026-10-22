@@ -16,4 +16,4 @@ Nhóm GK-XSTK_bcse:
 | Nguyễn Duy Hoàng | 25112049 |
 | Bùi Nhật Minh | 25112075 |
 | Phạm Tiến Sang | 25112105 |
-| Trần Ngô Tiến Đạt (Muối) | 25112231 |
+| Trần Ngô Tiến Đạt | 25112231 |
