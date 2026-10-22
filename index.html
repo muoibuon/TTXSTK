@@ -108,9 +108,9 @@ th:first-child, td:first-child { text-align: left; }
 .status { font-family: var(--f-mono); font-size: 12px; color: var(--on-panel-muted); }
 
 /* Trích đoạn code R hiển thị kèm mỗi mô phỏng */
-.code-wrap { display: grid; gap: 8px; }
+.code-wrap { display: grid; gap: 8px; margin: 0; min-width: 0; }
 .code-cap { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--mint); }
-pre.code { margin: 0; font-family: var(--f-mono); font-size: 14px; line-height: 1.7; color: var(--on-panel); background: var(--panel-2); border: 1px solid var(--grid); border-left: 3px solid var(--mint); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+pre.code { margin: 0; font-family: var(--f-mono); font-size: 14px; line-height: 1.7; color: var(--on-panel); background: var(--panel-2); border: 1px solid var(--grid); border-left: 3px solid var(--mint); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-variant-ligatures: none; }
 pre.code .cmt { color: var(--on-panel-muted); }
 
 /* Talking points, on paper */
@@ -132,7 +132,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
   #cvConv { aspect-ratio: 4 / 3; }
   #cvDots { aspect-ratio: 4 / 3; }
   .sec-head p { grid-column: 1 / -1; }
-  pre.code { font-size: 12px; padding: 12px; }
+  pre.code { font-size: 12px; padding: 12px; white-space: pre-wrap; }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 </style>
