@@ -40,6 +40,9 @@ h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(44px, 8vw
 h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(26px, 3.6vw, 36px); line-height: 1.15; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
 .lead { font-size: 20px; max-width: 62ch; margin: 0; }
 .byline { margin-top: 22px; font-size: 14px; color: var(--muted); }
+.byline-lbl { font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.members { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 24px; font-size: 15px; color: var(--ink); }
+.members span { font-family: var(--f-mono); font-size: 13px; color: var(--muted); margin-left: 6px; }
 .math { font-family: var(--f-mono); font-size: .92em; white-space: nowrap; }
 mark { background: linear-gradient(transparent 52%, var(--mint) 52%, var(--mint) 92%, transparent 92%); color: inherit; padding: 0 .12em; }
 
@@ -145,7 +148,17 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
   <div class="eyebrow">Chủ đề 10 · Tích phân Monte Carlo trong Hình học</div>
   <h1>Khối Steinmetz</h1>
   <p class="lead">Giao của hai hình trụ <span class="math">x² + y² ≤ 1</span> và <span class="math">x² + z² ≤ 1</span>. Thể tích đúng là <mark><span class="math">V = 16/3 ≈ 5.3333</span></mark>. Ta ước lượng nó chỉ bằng cách gieo điểm ngẫu nhiên đều <span class="math">U(−1, 1)</span> và đếm, rồi dùng Luật Yếu Số Lớn để giải thích vì sao cách này đúng.</p>
-  <div class="byline">Trần Ngô Tiến Đạt (Muối) · MSSV 25112231</div>
+  <div class="byline">
+    <span class="byline-lbl">Nhóm GK-XSTK_bcse · 6 thành viên</span>
+    <ul class="members">
+      <li>Nguyễn Khắc Trung Dũng <span>25112030</span></li>
+      <li>Nguyễn Tiến Dũng <span>25112032</span></li>
+      <li>Nguyễn Duy Hoàng <span>25112049</span></li>
+      <li>Bùi Nhật Minh <span>25112075</span></li>
+      <li>Phạm Tiến Sang <span>25112105</span></li>
+      <li>Trần Ngô Tiến Đạt (Muối) <span>25112231</span></li>
+    </ul>
+  </div>
 </header>
 
 <!-- 01 -->
@@ -361,7 +374,7 @@ mean(abs(est - 16/3) &gt; eps)         <span class="cmt"># P(|V̂ − V| &gt; ε
   <p class="note">Trang này dùng bộ sinh số ngẫu nhiên khác với Mersenne-Twister của R, nên cùng seed 2026 vẫn cho các con số khác ở vài chữ số cuối. Quy luật thì giống nhau: V̂ quanh 5.33, độ lệch chuẩn giảm theo 1/√n, xác suất lệch giảm về 0.</p>
 </section>
 
-<footer>Khối Steinmetz · Tích phân Monte Carlo, phân bố đều U(a, b) và Luật Yếu Số Lớn · Trần Ngô Tiến Đạt (Muối), 25112231</footer>
+<footer>Khối Steinmetz · Tích phân Monte Carlo, phân bố đều U(a, b) và Luật Yếu Số Lớn · Nhóm GK-XSTK_bcse: Nguyễn Khắc Trung Dũng, Nguyễn Tiến Dũng, Nguyễn Duy Hoàng, Bùi Nhật Minh, Phạm Tiến Sang, Trần Ngô Tiến Đạt</footer>
 </main>
 
 <script>
