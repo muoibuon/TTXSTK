@@ -126,6 +126,11 @@ pre.code .cmt { color: var(--on-panel-muted); }
 .ref table th { color: var(--muted); border-bottom-color: var(--rule); }
 .ref table td { border-bottom-color: var(--rule); }
 .note { font-size: 14px; color: var(--muted); max-width: 70ch; margin: 0; }
+/* Bảng thuật ngữ: chữ thường, căn trái, cho phép xuống dòng */
+.gloss th, .gloss td { text-align: left; white-space: normal; vertical-align: top; }
+.gloss td:first-child, .gloss td:last-child { font-family: var(--f-body); }
+.gloss td:first-child { font-weight: 500; }
+.gloss td:nth-child(2) { white-space: nowrap; }
 footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 18px; }
 
 @media (max-width: 760px) {
@@ -136,6 +141,11 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--rule)
   #cvDots { aspect-ratio: 4 / 3; }
   .sec-head p { grid-column: 1 / -1; }
   pre.code { font-size: 12px; padding: 12px; white-space: pre-wrap; }
+  .gloss thead { display: none; }
+  .gloss tr { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+  .gloss td { border: 0; padding: 0; }
+  .gloss td:nth-child(2) { text-align: right; }
+  .gloss td:last-child { grid-column: 1 / -1; color: var(--muted); }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 </style>
@@ -372,6 +382,34 @@ mean(abs(est - 16/3) &gt; eps)         <span class="cmt"># P(|V̂ − V| &gt; ε
     </table>
   </div>
   <p class="note">Trang này dùng bộ sinh số ngẫu nhiên khác với Mersenne-Twister của R, nên cùng seed 2026 vẫn cho các con số khác ở vài chữ số cuối. Quy luật thì giống nhau: V̂ quanh 5.33, độ lệch chuẩn giảm theo 1/√n, xác suất lệch giảm về 0.</p>
+</section>
+
+<!-- Thuật ngữ -->
+<section id="thuat-ngu">
+  <div class="sec-head">
+    <span class="step">+</span>
+    <h2>Bảng thuật ngữ</h2>
+    <p>Các khái niệm dùng trong bài, giải thích bằng lời đơn giản.</p>
+  </div>
+  <div class="ref gloss">
+    <table>
+      <thead><tr><th>Thuật ngữ</th><th>Ký hiệu</th><th>Hiểu đơn giản</th></tr></thead>
+      <tbody>
+        <tr><td>Phân bố đều</td><td>U(−1, 1)</td><td>Chọn một số bất kỳ từ −1 đến 1, số nào cũng có khả năng như nhau</td></tr>
+        <tr><td>Biến Bernoulli</td><td>Iᵢ ~ Bernoulli(p)</td><td>Kết quả chỉ có 1 (trúng) hoặc 0 (trượt), trúng với xác suất p</td></tr>
+        <tr><td>Tỉ lệ trúng</td><td>p = 2/3</td><td>Cứ 3 điểm thì khoảng 2 điểm rơi vào khối</td></tr>
+        <tr><td>Tỉ lệ đo được</td><td>p̂</td><td>Tỉ lệ trúng thực tế đếm được từ các điểm đã gieo</td></tr>
+        <tr><td>Ước lượng</td><td>V̂</td><td>Con số đoán ra từ dữ liệu, ở đây là 8 × p̂</td></tr>
+        <tr><td>Cỡ mẫu</td><td>N hoặc n</td><td>Số điểm gieo trong một lần thí nghiệm</td></tr>
+        <tr><td>Sai số chuẩn / độ lệch chuẩn</td><td>SD</td><td>Kết quả hay sai lệch khoảng bao nhiêu</td></tr>
+        <tr><td>Khoảng tin cậy 95%</td><td>V̂ ± 1,96 · SD</td><td>Khoảng mà ta khá chắc (95%) chứa đáp số thật</td></tr>
+        <tr><td>Ngưỡng sai</td><td>ε</td><td>Mức lệch tối đa ta chấp nhận, ví dụ 0,1</td></tr>
+        <tr><td>Luật Yếu Số Lớn</td><td>WLLN</td><td>Gieo càng nhiều, xác suất bị lệch quá ε càng tiến về 0</td></tr>
+        <tr><td>Bất đẳng thức Chebyshev</td><td>—</td><td>Một mức trần cho xác suất bị lệch, dùng để chứng minh WLLN</td></tr>
+        <tr><td>Seed</td><td>set.seed(2026)</td><td>Số khởi đầu để chạy lại ra cùng kết quả</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <footer>Khối Steinmetz · Tích phân Monte Carlo, phân bố đều U(a, b) và Luật Yếu Số Lớn · Nhóm GK-XSTK_bcse: Nguyễn Khắc Trung Dũng, Nguyễn Tiến Dũng, Nguyễn Duy Hoàng, Bùi Nhật Minh, Phạm Tiến Sang, Trần Ngô Tiến Đạt</footer>
